@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>annotation-text-fragment demo</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#1c1c1e; --muted:#666; --line:#ccc; --accent:#0b5fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17181a; --fg:#eee; --muted:#9a9a9a; --line:#444; --accent:#6ea0ff; } }
+  body { background:var(--bg); color:var(--fg); font:16px/1.5 system-ui,sans-serif; margin:0; padding:1rem; }
+  main { max-width:50rem; margin:0 auto; }
+  label { display:block; margin:.75rem 0 .25rem; font-weight:600; }
+  input, textarea { width:100%; box-sizing:border-box; font:inherit; padding:.4rem; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; }
+  output { display:block; word-break:break-all; padding:.6rem; border:1px solid var(--line); border-radius:4px; font-family:ui-monospace,monospace; min-height:1.5em; }
+  a { color:var(--accent); }
+  .row { display:flex; gap:.5rem; flex-wrap:wrap; margin:.75rem 0; }
+  button { font:inherit; padding:.4rem .8rem; border:1px solid var(--line); border-radius:4px; background:var(--bg); color:var(--fg); cursor:pointer; }
+  .err { color:#c62828; }
+  pre { overflow-x:auto; border:1px solid var(--line); border-radius:4px; padding:.6rem; }
+  small, .muted { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>TextQuoteSelector → Text Fragment URL</h1>
+  <p class="muted">Runs <code>annotation-text-fragment</code> in your browser. Try the samples, then open the result on the sample page.</p>
+
+  <div class="row" id="samples"></div>
+
+  <label for="url">Target URL</label>
+  <input id="url" value="sample.html">
+  <label for="prefix">prefix</label>
+  <input id="prefix" dir="auto">
+  <label for="exact">exact</label>
+  <textarea id="exact" rows="3" dir="auto"></textarea>
+  <label for="suffix">suffix</label>
+  <input id="suffix" dir="auto">
+
+  <label>Text fragment URL</label>
+  <output id="out"></output>
+  <p id="open"></p>
+  <p id="support" class="muted"></p>
+
+  <label>Selector JSON <small>(editing this updates the fields above)</small></label>
+  <textarea id="json" rows="7" spellcheck="false"></textarea>
+
+  <label>Parsed back with <code>urlToSelectors</code></label>
+  <pre id="back"></pre>
+</main>
+
+<script type="module">
+import { textQuoteToUrl, urlToSelectors } from '../src/index.js';
+
+const $ = (id) => document.getElementById(id);
+const samples = {
+  'English': { prefix: 'The quick ', exact: 'brown fox', suffix: ' jumps' },
+  'Arabic (RTL)': { prefix: 'قال ', exact: 'مرحبا بالعالم', suffix: ' للجميع' },
+  'Japanese': { prefix: '今日は', exact: '天気がいい', suffix: 'ですね' },
+  'Delimiters - , &': { prefix: '', exact: 'well-known, fast & loose', suffix: '' },
+  'Across paragraphs': { prefix: '', exact: 'ends here.\n\nA second paragraph starts', suffix: '' },
+};
+
+function selector() {
+  const s = { type: 'TextQuoteSelector', exact: $('exact').value };
+  if ($('prefix').value) s.prefix = $('prefix').value;
+  if ($('suffix').value) s.suffix = $('suffix').value;
+  return s;
+}
+
+function render(fromJson) {
+  const s = selector();
+  if (!fromJson) $('json').value = JSON.stringify(s, null, 2);
+  try {
+    const base = new URL($('url').value, location.href).href;
+    const url = textQuoteToUrl(base, s);
+    $('out').textContent = url;
+    $('out').classList.remove('err');
+    $('open').innerHTML = '';
+    const a = document.createElement('a');
+    a.href = url; a.textContent = 'Open the link'; a.target = '_blank'; a.rel = 'noopener';
+    $('open').append(a);
+    $('back').textContent = JSON.stringify(urlToSelectors(url), null, 2);
+  } catch (e) {
+    $('out').textContent = e.message;
+    $('out').classList.add('err');
+    $('open').textContent = '';
+    $('back').textContent = '';
+  }
+}
+
+for (const [name, s] of Object.entries(samples)) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.onclick = () => { load(s); };
+  $('samples').append(b);
+}
+function load(s, fromJson) {
+  $('prefix').value = s.prefix || ''; $('exact').value = s.exact || ''; $('suffix').value = s.suffix || '';
+  render(fromJson);
+}
+for (const id of ['url', 'prefix', 'exact', 'suffix']) $(id).addEventListener('input', () => render());
+$('json').addEventListener('input', () => {
+  try { load(JSON.parse($('json').value), true); } catch {}
+});
+
+$('support').textContent = 'fragmentDirective' in document
+  ? 'This browser supports text fragments.'
+  : 'This browser does not appear to support text fragments, so links will not highlight.';
+load(samples['English']);
+</script>
+</body>
+</html>
