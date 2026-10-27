@@ -1,0 +1,16 @@
+{
+  "name": "annotation-text-fragment",
+  "version": "0.1.0",
+  "description": "Convert Web Annotation TextQuoteSelectors to URL Text Fragment directives, and back",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "default": "./src/index.js" }
+  },
+  "files": ["src"],
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "keywords": ["web-annotation", "text-fragment", "TextQuoteSelector", "fragment-directive"],
+  "license": "Apache-2.0"
+}
